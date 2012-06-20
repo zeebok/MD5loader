@@ -10,3 +10,11 @@
 *.lai
 *.la
 *.a
+
+# Codeblocks files
+
+bin/
+obj/
+
+*.depends
+*.layout
