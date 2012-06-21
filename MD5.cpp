@@ -22,8 +22,31 @@ MD5::~MD5(void)
     delete jointList;
 }
 
+void MD5::printShaderLog(GLint shader)
+{
+    int length;
+    int chars;
+    GLchar* info;
+
+    glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &length);
+
+    info = new GLchar[length];
+    glGetShaderInfoLog(shader, length, &chars, info);
+    printf("Error: %s\n", info);
+    delete [] info;
+}
+
 void MD5::prepModel(void)
 {
+    // Copy Joint data to new buffers
+    jPos = new glm::vec3[72];
+    jOrt = new glm::vec4[72];
+    for(int i = 0; i < numJoints; ++i)
+    {
+        jPos[i] = jointList[i].position;
+        jOrt[i] = jointList[i].orientation;
+    }
+
     // Prepare Buffer Objects
     int offset = 0;
     glGenBuffers(1, &vbo);
@@ -37,6 +60,7 @@ void MD5::prepModel(void)
         {
             // Add UV coords
             glBufferSubData(GL_ARRAY_BUFFER, offset, sizeof(glm::vec2), glm::value_ptr(meshList[i].vertex[j].uv));
+            offset += sizeof(glm::vec2);
 
             // Add vertex weights
             glm::vec4 bias(0.0f);
@@ -45,7 +69,7 @@ void MD5::prepModel(void)
             for(int k = 0; k < meshList[i].vertex[j].weightElem; ++k)
             {
                 bias[k] = meshList[i].weight[index+k].bias;
-                glm::vec4 posi(0);
+                glm::vec4 posi(0, 0, 0, -1);
                 posi.x = meshList[i].weight[index+k].position.x;
                 posi.y = meshList[i].weight[index+k].position.y;
                 posi.z = meshList[i].weight[index+k].position.z;
@@ -53,10 +77,11 @@ void MD5::prepModel(void)
                 pos[k] = posi;
             }
 
-            glBufferSubData(GL_ARRAY_BUFFER, sizeof(glm::vec2), sizeof(glm::vec4), glm::value_ptr(bias));
-            glBufferSubData(GL_ARRAY_BUFFER, sizeof(glm::vec2) + sizeof(glm::vec4), sizeof(glm::mat4), glm::value_ptr(pos));
+            glBufferSubData(GL_ARRAY_BUFFER, offset, sizeof(glm::vec4), glm::value_ptr(bias));
+            offset += sizeof(glm::vec4);
+            glBufferSubData(GL_ARRAY_BUFFER, offset, sizeof(glm::mat4), glm::value_ptr(pos));
 
-            offset += sizeof(float)*24;
+            offset += sizeof(glm::mat4) + (sizeof(float)*2);
         }
     }
 
@@ -80,6 +105,28 @@ void MD5::prepModel(void)
     glBindAttribLocation(shaderProgram, uvLoc, "uv");
     glBindAttribLocation(shaderProgram, wBias, "wBias");
     glBindAttribLocation(shaderProgram, wPos, "wPos");
+
+    // Generate and bind Vertex Array Object
+    glGenVertexArrays(1, &vao);
+    glBindVertexArray(vao);
+
+    glEnableVertexAttribArray(uvLoc);
+    glEnableVertexAttribArray(wBias);
+    glEnableVertexAttribArray(wPos);
+    glEnableVertexAttribArray(wPos+1);
+    glEnableVertexAttribArray(wPos+2);
+    glEnableVertexAttribArray(wPos+3);
+
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glVertexAttribPointer(uvLoc, 2, GL_FLOAT, GL_FALSE, sizeof(float)*24, 0);
+    glVertexAttribPointer(wBias, 4, GL_FLOAT, GL_FALSE, sizeof(float)*24, (GLvoid*)(sizeof(glm::vec2)));
+    for(int i = 0; i < 4; ++i)
+    {
+        glVertexAttribPointer(wPos+i, 4, GL_FLOAT, GL_FALSE, sizeof(float)*24, (GLvoid*)(sizeof(glm::vec2)+sizeof(glm::vec4)+(sizeof(glm::vec4)*i)));
+    }
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
+
+    glBindVertexArray(0);
 }
 
 bool MD5::load(const char* filename)
@@ -227,6 +274,8 @@ bool MD5::load(const char* filename)
 
 bool MD5::loadShader(const char* vshader, const char* fshader)
 {
+    GLuint vertShader;
+    GLuint fragShader;
     GLint vsSize;
     GLint fsSize;
     char* vsBuffer;
@@ -260,8 +309,8 @@ bool MD5::loadShader(const char* vshader, const char* fshader)
         return false;
 
     // Create Vertex and Fragment Shaders
-    GLuint vertShader = glCreateShader(GL_VERTEX_SHADER);
-    GLuint fragShader = glCreateShader(GL_FRAGMENT_SHADER);
+    vertShader = glCreateShader(GL_VERTEX_SHADER);
+    fragShader = glCreateShader(GL_FRAGMENT_SHADER);
     glShaderSource(vertShader, 1, (const GLchar**)&vsBuffer, &vsSize);
     glShaderSource(fragShader, 1, (const GLchar**)&fsBuffer, &fsSize);
 
@@ -271,7 +320,8 @@ bool MD5::loadShader(const char* vshader, const char* fshader)
     glGetShaderiv(vertShader, GL_COMPILE_STATUS, &compiled);
     if(compiled == false)
     {
-        printf("Vert Shader failedto compile\n");
+        printf("Vert Shader failed to compile\n");
+        printShaderLog(vertShader);
         glDeleteShader(vertShader);
         vertShader = 0;
         glDeleteShader(fragShader);
@@ -283,7 +333,8 @@ bool MD5::loadShader(const char* vshader, const char* fshader)
     glGetShaderiv(fragShader, GL_COMPILE_STATUS, &compiled);
     if(compiled == false)
     {
-        printf("Frag Shader failedto compile\n");
+        printf("Frag Shader failed to compile\n");
+        printShaderLog(fragShader);
         glDeleteShader(vertShader);
         vertShader = 0;
         glDeleteShader(fragShader);
@@ -315,6 +366,10 @@ bool MD5::loadShader(const char* vshader, const char* fshader)
         return false;
     }
 
+    jpLoc = glGetUniformLocation(shaderProgram, "jPos");
+    joLoc = glGetUniformLocation(shaderProgram, "jOrt");
+    mvpLoc = glGetUniformLocation(shaderProgram, "mvpMatrix");
+
     // Clean up
     glDeleteShader(vertShader);
     glDeleteShader(fragShader);
@@ -329,7 +384,16 @@ void MD5::save(const char* filename)
 
 }
 
-void render(glm::mat4 mvp)
+void MD5::render(glm::mat4 mvp)
 {
-
+    glBindVertexArray(vao);
+    glUniform4fv(jpLoc, 72, glm::value_ptr(jPos[0]));
+    glUniform4fv(joLoc, 72, glm::value_ptr(jOrt[0]));
+    glUniformMatrix4fv(mvpLoc, 1, GL_FALSE, glm::value_ptr(mvp));
+    GLuint offset = 0;
+    for(int i = 0; i < numMeshes; ++i)
+    {
+        glDrawRangeElements(GL_TRIANGLES, offset, offset + meshList[i].numTris, meshList[i].numTris, GL_UNSIGNED_SHORT, 0);
+        offset += meshList[i].numTris;
+    }
 }

@@ -13,8 +13,10 @@
 				<Option compiler="gcc" />
 				<Compiler>
 					<Add option="-g" />
+					<Add option="`sdl2-config --cflags`" />
 				</Compiler>
 				<Linker>
+					<Add option="`sdl2-config --libs`" />
 					<Add library="GLEW" />
 				</Linker>
 			</Target>
@@ -36,6 +38,9 @@
 		</Compiler>
 		<Unit filename="MD5.cpp" />
 		<Unit filename="MD5.h" />
+		<Unit filename="fragshader.glsl" />
+		<Unit filename="main.cpp" />
+		<Unit filename="vertshader.glsl" />
 		<Extensions>
 			<code_completion />
 			<envvars />
