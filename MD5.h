@@ -59,11 +59,16 @@ class MD5
         Joint* jointList;
         Mesh* meshList;
 
+        glm::vec3* jPos;
+        glm::vec4* jOrt;
+
         char name[32];
 
         GLuint shaderProgram;
-        GLuint vbo, ibo;
+        GLuint vao, vbo, ibo;
+        GLuint jpLoc, joLoc, mvpLoc;
 
+        void printShaderLog(GLint shader);
         void prepModel(void);
         void renderGL2(void);
 
