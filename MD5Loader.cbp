@@ -38,6 +38,8 @@
 		</Compiler>
 		<Unit filename="MD5.cpp" />
 		<Unit filename="MD5.h" />
+		<Unit filename="Skeleton.cpp" />
+		<Unit filename="Skeleton.h" />
 		<Unit filename="fragshader.glsl" />
 		<Unit filename="main.cpp" />
 		<Unit filename="vertshader.glsl" />

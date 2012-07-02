@@ -9,6 +9,8 @@
 
 #include <GL/glew.h>
 
+#include "Skeleton.h"
+
 class MD5
 {
     private:
@@ -31,14 +33,6 @@ class MD5
             glm::vec3 position;
         };
 
-        struct Joint
-        {
-            char name[64];
-            int parentIndex;
-            glm::vec3 position;
-            glm::vec4 orientation;
-        };
-
         struct Mesh
         {
             char material[128];
@@ -56,7 +50,7 @@ class MD5
         int numVerts;
         int numTris;
 
-        Joint* jointList;
+        Skeleton* skel;
         Mesh* meshList;
 
         glm::vec3* jPos;

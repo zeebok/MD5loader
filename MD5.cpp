@@ -19,7 +19,7 @@ MD5::~MD5(void)
     }
 
     delete meshList;
-    delete jointList;
+    delete skel;
 }
 
 void MD5::printShaderLog(GLint shader)
@@ -165,7 +165,7 @@ bool MD5::load(const char* filename)
 		{
 			if(numJoints > 0)
 			{
-				jointList = new Joint[numJoints]();
+			    skel = new Skeleton(numJoints);
 			}
 		}
 		else if(sscanf(lineBuffer, "numMeshes %d", &numMeshes) == 1)
@@ -181,18 +181,21 @@ bool MD5::load(const char* filename)
 			for(int i = 0; i < numJoints; ++i)
 			{
 				fgets(lineBuffer, sizeof(lineBuffer), input);
-				if(sscanf(lineBuffer, "\t\"%[^\"]\"\t%d ( %f %f %f ) ( %f %f %f )", jointList[i].name, &jointList[i].parentIndex,
-                    &jointList[i].position.x, &jointList[i].position.y, &jointList[i].position.z,
-                    &jointList[i].orientation.x, &jointList[i].orientation.y, &jointList[i].orientation.z) == 8)
+				Skeleton::Bone* newBone;
+				if(sscanf(lineBuffer, "\t\"%[^\"]\"\t%d ( %f %f %f ) ( %f %f %f )", newBone->name, newBone->parentIndex,
+                    newBone->position.x, newBone->position.y, newBone->position.z,
+                    newBone->orientation.x, newBone->orientation.y, newBone->orientation.z) == 8)
 				{
-					float w = 1.0f - (jointList[i].orientation.x * jointList[i].orientation.x)
-						- (jointList[i].orientation.y * jointList[i].orientation.y)
-						- (jointList[i].orientation.z * jointList[i].orientation.z);
+					float w = 1.0f - (newBone->orientation.x * newBone->orientation.x)
+						- (newBone->orientation.y * newBone->orientation.y)
+						- (newBone->orientation.z * newBone->orientation.z);
 
 					if(w < 0.0f)
-						jointList[i].orientation.w = 0.0f;
+						newBone->orientation.w = 0.0f;
 					else
-						jointList[i].orientation.w = -sqrt(w);
+						newBone->orientation.w = -sqrt(w);
+
+                    skel->addBone(newBone);
 				}
 			}
 		}
@@ -387,6 +390,7 @@ void MD5::save(const char* filename)
 void MD5::render(glm::mat4 mvp)
 {
     glBindVertexArray(vao);
+    glUseProgram(shaderProgram);
     glUniform4fv(jpLoc, 72, glm::value_ptr(jPos[0]));
     glUniform4fv(joLoc, 72, glm::value_ptr(jOrt[0]));
     glUniformMatrix4fv(mvpLoc, 1, GL_FALSE, glm::value_ptr(mvp));
