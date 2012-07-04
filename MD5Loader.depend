@@ -1,0 +1,44 @@
+# depslib dependency file v1.0
+1341022938 source:/home/zeebok/Documents/github/MD5loader/MD5.cpp
+	"MD5.h"
+
+1340299362 /home/zeebok/Documents/github/MD5loader/MD5.h
+	<stdio.h>
+	<string.h>
+	<glm/glm.hpp>
+	<glm/gtc/type_ptr.hpp>
+	<GL/glew.h>
+
+1340255375 source:/home/zeebok/Documents/github/MD5loader/main.cpp
+	<GL/glew.h>
+	<SDL2/SDL.h>
+	<glm/glm.hpp>
+	<glm/gtc/matrix_transform.hpp>
+	"MD5.h"
+
+1341362592 source:/home/zeebok/Documents/git/MD5loader/main.cpp
+	<GL/glew.h>
+	<SDL2/SDL.h>
+	<glm/glm.hpp>
+	<glm/gtc/matrix_transform.hpp>
+	"MD5.h"
+
+1341262560 /home/zeebok/Documents/git/MD5loader/MD5.h
+	<stdio.h>
+	<string.h>
+	<glm/glm.hpp>
+	<glm/gtc/type_ptr.hpp>
+	<GL/glew.h>
+	"Skeleton.h"
+
+1341345563 /home/zeebok/Documents/git/MD5loader/Skeleton.h
+	<GL/glew.h>
+	<glm/glm.hpp>
+	<glm/gtc/type_ptr.hpp>
+
+1341345866 source:/home/zeebok/Documents/git/MD5loader/MD5.cpp
+	"MD5.h"
+
+1341349696 source:/home/zeebok/Documents/git/MD5loader/Skeleton.cpp
+	"Skeleton.h"
+

@@ -27,7 +27,7 @@ int main(int argc, char** argv)
     bool running = true;
     SDL_Event event;
 
-    glm::mat4 pmat = glm::perspective(45.0f, 4.f/3, 0.1f, 100.0f);
+    glm::mat4 pmat = glm::perspective(45.0f, 4.f/3, 0.1f, 1000.0f);
 
     while(running)
     {
@@ -43,7 +43,7 @@ int main(int argc, char** argv)
             }
         }
 
-        model->render(glm::translate(pmat, glm::vec3(0.f, 0.f, -5.f)));
+        model->render(glm::rotate(glm::translate(pmat, glm::vec3(0.f, 0.f, -150.f)), -90.f, glm::vec3(1.f, 0.f, 0.f)));
 
         SDL_GL_SwapWindow(mainWin);
     }
