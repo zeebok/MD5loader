@@ -11,12 +11,6 @@ MD5::MD5(void)
 MD5::~MD5(void)
 {
     glDeleteProgram(shaderProgram);
-    for(int i = 0; i < numMeshes; ++i)
-    {
-        delete meshList[i].vertex;
-        delete meshList[i].tri;
-        delete meshList[i].weight;
-    }
 
     delete meshList;
     delete skel;
@@ -38,42 +32,36 @@ void MD5::printShaderLog(GLint shader)
 
 void MD5::prepModel(void)
 {
-    // Copy Joint data to new buffers
-    jPos = new glm::vec3[72];
-    jOrt = new glm::vec4[72];
-//    for(int i = 0; i < numJoints; ++i)
-//    {
-//        jPos[i] = jointList[i].position;
-//        jOrt[i] = jointList[i].orientation;
-//    }
-
     // Prepare Buffer Objects
     int offset = 0;
+    size_t vboSize = sizeof(glm::vec2) + sizeof(glm::vec4) + sizeof(glm::mat4);
     glGenBuffers(1, &vbo);
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(float)*24*numVerts, NULL, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, vboSize*numVerts, NULL, GL_STATIC_DRAW);
 
     // Generate Vertex Buffer Object
     for(int i = 0; i < numMeshes; ++i)
     {
-        for(int j = 0; j < meshList[i].numVerts; ++j)
+        for(int j = 0; j < meshList[i].getNumVert(); ++j)
         {
+            Mesh::Vertex v = meshList[i].getVerts(j);
             // Add UV coords
-            glBufferSubData(GL_ARRAY_BUFFER, offset, sizeof(glm::vec2), glm::value_ptr(meshList[i].vertex[j].uv));
+            glBufferSubData(GL_ARRAY_BUFFER, offset, sizeof(glm::vec2), glm::value_ptr(v.uv));
             offset += sizeof(glm::vec2);
 
             // Add vertex weights
             glm::vec4 bias(0.0f);
             glm::mat4 pos(0.0f);
-            int index = meshList[i].vertex[j].weightIndex;
-            for(int k = 0; k < meshList[i].vertex[j].weightElem; ++k)
+            int index = v.weightIndex;
+            for(int k = 0; k < v.weightElem; ++k)
             {
-                bias[k] = meshList[i].weight[index+k].bias;
+                Mesh::Weight w = meshList[i].getWeight(index+k);
+                bias[k] = w.value;
                 glm::vec4 posi(0, 0, 0, -1);
-                posi.x = meshList[i].weight[index+k].position.x;
-                posi.y = meshList[i].weight[index+k].position.y;
-                posi.z = meshList[i].weight[index+k].position.z;
-                posi.w = meshList[i].weight[index+k].jointIndex;
+                posi.x = w.position.x;
+                posi.y = w.position.y;
+                posi.z = w.position.z;
+                posi.w = w.jointIndex;
                 pos[k] = posi;
             }
 
@@ -94,8 +82,16 @@ void MD5::prepModel(void)
 
     for(int i = 0; i < numMeshes; ++i)
     {
-        glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, offset, sizeof(GLushort)*3*meshList[i].numTris, meshList[i].tri);
-        offset += meshList[i].numTris;
+        for(int j = 0; j < meshList[i].getNumTri(); ++j)
+        {
+            Mesh::Triangle t = meshList[i].getTris(j);
+            t.v1 += offset;
+            t.v2 += offset;
+            t.v3 += offset;
+            glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, offset, sizeof(GLushort)*3, (GLvoid*)&t);
+        }
+
+        offset += meshList[i].getNumTri();
     }
 
     GLuint uvLoc = glGetAttribLocation(shaderProgram, "uv");
@@ -118,11 +114,11 @@ void MD5::prepModel(void)
     glEnableVertexAttribArray(wPos+3);
 
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glVertexAttribPointer(uvLoc, 2, GL_FLOAT, GL_FALSE, sizeof(float)*24, 0);
-    glVertexAttribPointer(wBias, 4, GL_FLOAT, GL_FALSE, sizeof(float)*24, (GLvoid*)(sizeof(glm::vec2)));
+    glVertexAttribPointer(uvLoc, 2, GL_FLOAT, GL_FALSE, vboSize, 0);
+    glVertexAttribPointer(wBias, 4, GL_FLOAT, GL_FALSE, vboSize, (GLvoid*)(sizeof(glm::vec2)));
     for(int i = 0; i < 4; ++i)
     {
-        glVertexAttribPointer(wPos+i, 4, GL_FLOAT, GL_FALSE, sizeof(float)*24, (GLvoid*)(sizeof(glm::vec2)+sizeof(glm::vec4)+(sizeof(glm::vec4)*i)));
+        glVertexAttribPointer(wPos+i, 4, GL_FLOAT, GL_FALSE, vboSize, (GLvoid*)(sizeof(glm::vec2)+sizeof(glm::vec4)+(sizeof(glm::vec4)*i)));
     }
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
 
@@ -207,64 +203,71 @@ bool MD5::load(const char* filename)
 			int weightIndex = 0;
 			float fdata[4];
 			int idata[3];
+			char mat[128];
 
 			while((lineBuffer[0] != '}') && !feof(input))
 			{
 				fgets(lineBuffer, sizeof(lineBuffer), input);
 
-				if(sscanf(lineBuffer, "\tshader \"%[^\"]\"", meshList[currentMesh].material) == 1)
+				if(sscanf(lineBuffer, "\tshader \"%[^\"]\"", mat) == 1)
 				{
 				    // Load mesh texture
 					;
 				}
-				else if(sscanf(lineBuffer, "\tnumverts %d", &meshList[currentMesh].numVerts) == 1)
+				else if(sscanf(lineBuffer, "\tnumverts %d", &idata[0]) == 1)
 				{
-					if(meshList[currentMesh].numVerts > 0)
+					if(idata[0] > 0)
 					{
-						meshList[currentMesh].vertex = new Vertex[meshList[currentMesh].numVerts]();
-						numVerts += meshList[currentMesh].numVerts;
+						meshList[currentMesh].setNumVert(idata[0]);
+						numVerts += idata[0];
 					}
 				}
-				else if(sscanf(lineBuffer, "\tnumtris %d", &meshList[currentMesh].numTris) == 1)
+				else if(sscanf(lineBuffer, "\tnumtris %d", &idata[1]) == 1)
 				{
-					if(meshList[currentMesh].numTris > 0)
+					if(idata[1] > 0)
 					{
-						meshList[currentMesh].tri = new Tri[meshList[currentMesh].numTris]();
-						numTris += meshList[currentMesh].numTris;
+						meshList[currentMesh].setNumTri(idata[1]);
+						numTris += idata[1];
 					}
 				}
-				else if(sscanf(lineBuffer, "\tnumweights %d", &meshList[currentMesh].numWeights) == 1)
+				else if(sscanf(lineBuffer, "\tnumweights %d", &idata[2]) == 1)
 				{
-					if(meshList[currentMesh].numWeights > 0)
+					if(idata[2] > 0)
 					{
-						meshList[currentMesh].weight = new Weight[meshList[currentMesh].numWeights]();
+						meshList[currentMesh].setNumWeight(idata[2]);
 					}
 				}
 				else if(sscanf(lineBuffer, "\tvert %d ( %f %f ) %d %d",
 					&vertIndex, &fdata[0], &fdata[1], &idata[0], &idata[1])
 					== 5)
 				{
-					meshList[currentMesh].vertex[vertIndex].uv.s = fdata[0];
-					meshList[currentMesh].vertex[vertIndex].uv.t = fdata[1];
-					meshList[currentMesh].vertex[vertIndex].weightIndex = idata[0];
-					meshList[currentMesh].vertex[vertIndex].weightElem = idata[1];
+				    Mesh::Vertex* vertex = new Mesh::Vertex();
+					vertex->uv.s = fdata[0];
+					vertex->uv.t = fdata[1];
+					vertex->weightIndex = idata[0];
+					vertex->weightElem = idata[1];
+					meshList[currentMesh].addVert(*vertex, vertIndex);
 				}
 				else if(sscanf(lineBuffer, "\ttri %d %d %d %d", &triIndex,
 					&idata[0], &idata[1], &idata[2]) == 4)
 				{
-					meshList[currentMesh].tri[triIndex].vert1 = idata[0];
-					meshList[currentMesh].tri[triIndex].vert2 = idata[1];
-					meshList[currentMesh].tri[triIndex].vert3 = idata[2];
+				    Mesh::Triangle* triangle = new Mesh::Triangle();
+					triangle->v1 = idata[0];
+					triangle->v2 = idata[1];
+					triangle->v3 = idata[2];
+					meshList[currentMesh].addTri(*triangle, triIndex);
 				}
 				else if(sscanf(lineBuffer, "\tweight %d %d %f ( %f %f %f)",
 					&weightIndex, &idata[0], &fdata[0],
 					&fdata[1], &fdata[2], &fdata[3]) == 6)
 				{
-					meshList[currentMesh].weight[weightIndex].jointIndex = idata[0];
-					meshList[currentMesh].weight[weightIndex].bias = fdata[0];
-					meshList[currentMesh].weight[weightIndex].position.x = fdata[1];
-					meshList[currentMesh].weight[weightIndex].position.y = fdata[2];
-					meshList[currentMesh].weight[weightIndex].position.z = fdata[3];
+				    Mesh::Weight* weight = new Mesh::Weight();
+					weight->jointIndex = idata[0];
+					weight->value = fdata[0];
+					weight->position.x = fdata[1];
+					weight->position.y = fdata[2];
+					weight->position.z = fdata[3];
+					meshList[currentMesh].addWeight(*weight, weightIndex);
 				}
 			}
 			++currentMesh;
@@ -389,16 +392,17 @@ void MD5::save(const char* filename)
 
 void MD5::render(glm::mat4 mvp)
 {
-    skel->draw(mvp);
+    #ifdef _DEBUG_
+        skel->draw(mvp);
+    #endif
     glBindVertexArray(vao);
     glUseProgram(shaderProgram);
-    glUniform4fv(jpLoc, 72, glm::value_ptr(jPos[0]));
-    glUniform4fv(joLoc, 72, glm::value_ptr(jOrt[0]));
     glUniformMatrix4fv(mvpLoc, 1, GL_FALSE, glm::value_ptr(mvp));
     GLuint offset = 0;
     for(int i = 0; i < numMeshes; ++i)
     {
-        glDrawRangeElements(GL_TRIANGLES, offset, offset + meshList[i].numTris, meshList[i].numTris, GL_UNSIGNED_SHORT, 0);
-        offset += meshList[i].numTris;
+        offset += meshList[i].getNumTri();
     }
+
+    glDrawElements(GL_TRIANGLES, offset, GL_UNSIGNED_SHORT, 0);
 }

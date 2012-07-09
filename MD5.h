@@ -10,40 +10,11 @@
 #include <GL/glew.h>
 
 #include "Skeleton.h"
+#include "Mesh.h"
 
 class MD5
 {
     private:
-        struct Vertex
-        {
-            glm::vec2 uv;
-            int weightIndex;
-            int weightElem;
-        };
-
-        struct Tri
-        {
-            GLushort vert1, vert2, vert3;
-        };
-
-        struct Weight
-        {
-            int jointIndex;
-            float bias;
-            glm::vec3 position;
-        };
-
-        struct Mesh
-        {
-            char material[128];
-            Vertex* vertex;
-            Tri* tri;
-            Weight* weight;
-            int numVerts;
-            int numTris;
-            int numWeights;
-        };
-
         int count; // How many instances in use
         int numJoints;
         int numMeshes;
@@ -52,9 +23,6 @@ class MD5
 
         Skeleton* skel;
         Mesh* meshList;
-
-        glm::vec3* jPos;
-        glm::vec4* jOrt;
 
         char name[32];
 

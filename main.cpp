@@ -43,7 +43,7 @@ int main(int argc, char** argv)
             }
         }
 
-        model->render(glm::rotate(glm::translate(pmat, glm::vec3(0.f, 0.f, -150.f)), -90.f, glm::vec3(1.f, 0.f, 0.f)));
+        model->render(glm::rotate(glm::translate(pmat, glm::vec3(0.f, -25.f, -150.f)), -90.f, glm::vec3(1.f, 0.f, 0.f)));
 
         SDL_GL_SwapWindow(mainWin);
     }
