@@ -6,6 +6,11 @@ MD5::MD5(void)
     numMeshes = 0;
     numTris = 0;
     numVerts = 0;
+
+    if(GLEW_ARB_uniform_buffer_object)
+        render = &MD5::renderGL3;
+    else
+        render = &MD5::renderGL2;
 }
 
 MD5::~MD5(void)
@@ -106,6 +111,7 @@ void MD5::prepModel(void)
     glGenVertexArrays(1, &vao);
     glBindVertexArray(vao);
 
+    //Enable and link attributes
     glEnableVertexAttribArray(uvLoc);
     glEnableVertexAttribArray(wBias);
     glEnableVertexAttribArray(wPos);
@@ -275,6 +281,10 @@ bool MD5::load(const char* filename)
 	}
 
 	fclose(input);
+
+	prepModel();
+	skel->prepUniforms();
+
 	return true;
 }
 
@@ -390,11 +400,9 @@ void MD5::save(const char* filename)
 
 }
 
-void MD5::render(glm::mat4 mvp)
+// TODO: Make this proper
+void MD5::renderGL2(glm::mat4 mvp)
 {
-    #ifdef _DEBUG_
-        skel->draw(mvp);
-    #endif
     glBindVertexArray(vao);
     glUseProgram(shaderProgram);
     glUniformMatrix4fv(mvpLoc, 1, GL_FALSE, glm::value_ptr(mvp));
@@ -405,4 +413,27 @@ void MD5::render(glm::mat4 mvp)
     }
 
     glDrawElements(GL_TRIANGLES, offset, GL_UNSIGNED_SHORT, 0);
+
+    #ifdef _DEBUG_
+        skel->draw(mvp);
+    #endif
+}
+
+// TODO: Make this proper
+void MD5::renderGL3(glm::mat4 mvp)
+{
+    glBindVertexArray(vao);
+    glUseProgram(shaderProgram);
+    glUniformMatrix4fv(mvpLoc, 1, GL_FALSE, glm::value_ptr(mvp));
+    GLuint offset = 0;
+    for(int i = 0; i < numMeshes; ++i)
+    {
+        offset += meshList[i].getNumTri();
+    }
+
+    glDrawElements(GL_TRIANGLES, offset, GL_UNSIGNED_SHORT, 0);
+
+    #ifdef _DEBUG_
+        skel->draw(mvp);
+    #endif
 }

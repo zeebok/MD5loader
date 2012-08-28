@@ -7,8 +7,9 @@
 		<Option compiler="gcc" />
 		<Build>
 			<Target title="Debug">
-				<Option output="bin/Debug/MD5Loader" prefix_auto="1" extension_auto="1" />
-				<Option object_output="obj/" />
+				<Option platforms="Unix;Mac;" />
+				<Option output="bin\Debug\MD5Loader" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj\" />
 				<Option type="1" />
 				<Option compiler="gcc" />
 				<Compiler>
@@ -22,8 +23,40 @@
 				</Linker>
 			</Target>
 			<Target title="Release">
-				<Option output="bin/Release/MD5Loader" prefix_auto="1" extension_auto="1" />
-				<Option object_output="obj/" />
+				<Option platforms="Unix;Mac;" />
+				<Option output="bin\Release\MD5Loader" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj\" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-O2" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+				</Linker>
+			</Target>
+			<Target title="Debug32">
+				<Option output="bin\Debug\MD5Loader" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj\" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-g" />
+					<Add option="`sdl2-config --cflags`" />
+					<Add option="-D_DEBUG_" />
+				</Compiler>
+				<Linker>
+					<Add library="mingw32" />
+					<Add library="sdl2main" />
+					<Add library="sdl2" />
+					<Add library="glew32" />
+					<Add library="opengl32" />
+				</Linker>
+			</Target>
+			<Target title="Release32">
+				<Option platforms="Windows;" />
+				<Option output="bin\Release\MD5Loader" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj\" />
 				<Option type="1" />
 				<Option compiler="gcc" />
 				<Compiler>
@@ -43,10 +76,11 @@
 		<Unit filename="Mesh.h" />
 		<Unit filename="Skeleton.cpp" />
 		<Unit filename="Skeleton.h" />
-		<Unit filename="camera.h" />
 		<Unit filename="fragshader.glsl" />
+		<Unit filename="fragshader3.glsl" />
 		<Unit filename="main.cpp" />
 		<Unit filename="vertshader.glsl" />
+		<Unit filename="vertshader3.glsl" />
 		<Extensions>
 			<code_completion />
 			<envvars />

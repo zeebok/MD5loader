@@ -21,7 +21,11 @@ int main(int argc, char** argv)
     glClearColor(0.0, 0.0, 0.0, 1.0);
 
     MD5* model = new MD5();
-    model->loadShader("vertshader.glsl", "fragshader.glsl");
+    if(!GLEW_ARB_uniform_buffer_object)
+        model->loadShader("vertshader.glsl", "fragshader.glsl");
+    else
+        model->loadShader("vertshader3.glsl", "fragshader3.glsl");
+
     model->load("boblampclean.md5mesh");
 
     bool running = true;
@@ -43,7 +47,7 @@ int main(int argc, char** argv)
             }
         }
 
-        model->render(glm::rotate(glm::translate(pmat, glm::vec3(0.f, -25.f, -150.f)), -90.f, glm::vec3(1.f, 0.f, 0.f)));
+        (model->* model->render)(glm::rotate(glm::translate(pmat, glm::vec3(0.f, -25.f, -150.f)), -90.f, glm::vec3(1.f, 0.f, 0.f)));
 
         SDL_GL_SwapWindow(mainWin);
     }

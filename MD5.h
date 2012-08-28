@@ -32,17 +32,19 @@ class MD5
 
         void printShaderLog(GLint shader);
         void prepModel(void);
-        void renderGL2(void);
+        void renderGL2(glm::mat4 mvp);
+        void renderGL3(glm::mat4 mvp);
 
     public:
         MD5(void);
         ~MD5(void);
 
         bool load(const char* filename);
-        void save(const char* filename);
-        void render(glm::mat4 mvp);
-
+        bool load(const char* filename, const char* vshader, const char* fshader);
         bool loadShader(const char* vshader, const char* fshader);
+        void save(const char* filename);
+
+        void (MD5::*render)(glm::mat4 mvp);
 
         // Usage count
         void add(void);

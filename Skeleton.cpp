@@ -25,7 +25,12 @@ bool Skeleton::addBone(Bone b)
 
 void Skeleton::prepUniforms(void)
 {
-    if(GLEW_VERSION_2_1)
+    if(GLEW_ARB_uniform_buffer_object)
+    {
+        // TODO: Finish binding UBO
+        glGenBuffers(GL_UNIFORM_BUFFER, &ubo);
+    }
+    else
     {
         // Is this needed or just perfor NUMBONES glUniform calls?
         position = new glm::vec3[numBones];
@@ -36,11 +41,6 @@ void Skeleton::prepUniforms(void)
             position[i] = skeleton[i].position;
             orientation[i] = skeleton[i].orientation;
         }
-    }
-    else
-    {
-        // TODO: Finish binding UBO
-        glGenBuffers(GL_UNIFORM_BUFFER, &ubo);
     }
 }
 
