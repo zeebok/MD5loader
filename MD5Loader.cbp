@@ -41,11 +41,14 @@
 				<Option type="1" />
 				<Option compiler="gcc" />
 				<Compiler>
+					<Add option="-ansi" />
+					<Add option="-pg" />
 					<Add option="-g" />
 					<Add option="`sdl2-config --cflags`" />
 					<Add option="-D_DEBUG_" />
 				</Compiler>
 				<Linker>
+					<Add option="-pg -lgmon" />
 					<Add library="mingw32" />
 					<Add library="sdl2main" />
 					<Add library="sdl2" />

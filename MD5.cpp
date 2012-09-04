@@ -99,15 +99,24 @@ void MD5::prepModel(void)
         offset += meshList[i].getNumTri();
     }
 
-    GLuint uvLoc = glGetAttribLocation(shaderProgram, "uv");
-    GLuint wBias = glGetAttribLocation(shaderProgram, "wBias");
-    GLuint wPos = glGetAttribLocation(shaderProgram, "wPos");
+    GLuint uvLoc = 0;
+    GLuint wBias = 1;
+    GLuint wPos = 2;
 
-    glBindAttribLocation(shaderProgram, uvLoc, "uv");
-    glBindAttribLocation(shaderProgram, wBias, "wBias");
-    glBindAttribLocation(shaderProgram, wPos, "wPos");
+    if(GLEW_ARB_uniform_buffer_object)
+    {
+        glBindAttribLocation(shaderProgram, 0, "uv");
+        glBindAttribLocation(shaderProgram, 1, "wBias");
+        glBindAttribLocation(shaderProgram, 2, "wPos");
+    }
+    else
+    {
+        uvLoc = glGetAttribLocation(shaderProgram, "uv");
+        wBias = glGetAttribLocation(shaderProgram, "wBias");
+        wPos = glGetAttribLocation(shaderProgram, "wPos");
+    }
 
-    // Generate and bind Vertex Array Object
+        // Generate and bind Vertex Array Object
     glGenVertexArrays(1, &vao);
     glBindVertexArray(vao);
 
@@ -129,6 +138,23 @@ void MD5::prepModel(void)
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
 
     glBindVertexArray(0);
+}
+
+bool MD5::load(const char* filename, const char* vshader, const char* fshader)
+{
+    if(!loadShader(vshader, fshader))
+    {
+        fprintf(stderr, "Failed to load shaders!\n");
+        return false;
+    }
+
+    if(!load(filename))
+    {
+        fprintf(stderr, "Failed to load model!\n");
+        return false;
+    }
+
+    return true;
 }
 
 bool MD5::load(const char* filename)
@@ -283,7 +309,7 @@ bool MD5::load(const char* filename)
 	fclose(input);
 
 	prepModel();
-	skel->prepUniforms();
+	skel->prepUniforms(shaderProgram);
 
 	return true;
 }
@@ -300,7 +326,10 @@ bool MD5::loadShader(const char* vshader, const char* fshader)
     // Load Vertex Shader
     FILE* vs = fopen(vshader, "r");
     if(NULL == vs)
+    {
+        fprintf(stderr, "Cannot open vertex shader\n");
         return false;
+    }
     fseek(vs, 0, SEEK_END);
     vsSize = ftell(vs);
     rewind(vs);
@@ -314,7 +343,10 @@ bool MD5::loadShader(const char* vshader, const char* fshader)
     // Load Fragment Shader
     FILE* fs = fopen(fshader, "r");
     if(NULL == fs)
+    {
+        fprintf(stderr, "Cannot open fragment shader\n");
         return false;
+    }
     fseek(fs, 0, SEEK_END);
     fsSize = ftell(fs);
     rewind(fs);
@@ -336,7 +368,7 @@ bool MD5::loadShader(const char* vshader, const char* fshader)
     glGetShaderiv(vertShader, GL_COMPILE_STATUS, &compiled);
     if(compiled == false)
     {
-        printf("Vert Shader failed to compile\n");
+        fprintf(stderr, "Vert Shader failed to compile\n");
         printShaderLog(vertShader);
         glDeleteShader(vertShader);
         vertShader = 0;
@@ -349,7 +381,7 @@ bool MD5::loadShader(const char* vshader, const char* fshader)
     glGetShaderiv(fragShader, GL_COMPILE_STATUS, &compiled);
     if(compiled == false)
     {
-        printf("Frag Shader failed to compile\n");
+        fprintf(stderr, "Frag Shader failed to compile\n");
         printShaderLog(fragShader);
         glDeleteShader(vertShader);
         vertShader = 0;
@@ -370,7 +402,7 @@ bool MD5::loadShader(const char* vshader, const char* fshader)
     glGetProgramiv(shaderProgram, GL_LINK_STATUS, &linked);
     if(linked == false)
     {
-        printf("Program linking failed\n");
+        fprintf(stderr, "Program linking failed\n");
         glDetachShader(shaderProgram, vertShader);
         glDetachShader(shaderProgram, fragShader);
         glDeleteShader(vertShader);
@@ -382,8 +414,12 @@ bool MD5::loadShader(const char* vshader, const char* fshader)
         return false;
     }
 
-    jpLoc = glGetUniformLocation(shaderProgram, "jPos");
-    joLoc = glGetUniformLocation(shaderProgram, "jOrt");
+    if(!GLEW_ARB_uniform_buffer_object)
+    {
+        jpLoc = glGetUniformLocation(shaderProgram, "jPos");
+        joLoc = glGetUniformLocation(shaderProgram, "jOrt");
+    }
+
     mvpLoc = glGetUniformLocation(shaderProgram, "mvpMatrix");
 
     // Clean up
@@ -406,13 +442,13 @@ void MD5::renderGL2(glm::mat4 mvp)
     glBindVertexArray(vao);
     glUseProgram(shaderProgram);
     glUniformMatrix4fv(mvpLoc, 1, GL_FALSE, glm::value_ptr(mvp));
-    GLuint offset = 0;
+    GLuint tris = 0;
     for(int i = 0; i < numMeshes; ++i)
     {
-        offset += meshList[i].getNumTri();
+        tris += meshList[i].getNumTri();
     }
 
-    glDrawElements(GL_TRIANGLES, offset, GL_UNSIGNED_SHORT, 0);
+    glDrawElements(GL_TRIANGLES, tris, GL_UNSIGNED_SHORT, 0);
 
     #ifdef _DEBUG_
         skel->draw(mvp);
@@ -425,13 +461,15 @@ void MD5::renderGL3(glm::mat4 mvp)
     glBindVertexArray(vao);
     glUseProgram(shaderProgram);
     glUniformMatrix4fv(mvpLoc, 1, GL_FALSE, glm::value_ptr(mvp));
-    GLuint offset = 0;
+    GLuint tris = 0;
     for(int i = 0; i < numMeshes; ++i)
     {
-        offset += meshList[i].getNumTri();
+        tris += meshList[i].getNumTri();
     }
 
-    glDrawElements(GL_TRIANGLES, offset, GL_UNSIGNED_SHORT, 0);
+    glDrawElements(GL_TRIANGLES, tris, GL_UNSIGNED_SHORT, 0);
+
+    glBindVertexArray(0);
 
     #ifdef _DEBUG_
         skel->draw(mvp);

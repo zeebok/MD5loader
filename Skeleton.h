@@ -19,7 +19,7 @@ class Skeleton
         virtual ~Skeleton(void);
 
         virtual bool addBone(Bone b);
-        virtual void prepUniforms(void);
+        virtual void prepUniforms(GLuint program);
         virtual void draw(glm::mat4 mvp);
 
     protected:
@@ -28,7 +28,7 @@ class Skeleton
         int numBones;
         int currentBone;
         Bone* skeleton;
-        GLuint ubo;
+        GLuint ubo, block, globalBind;
 
         // For OpenGL 2.1 uniform compatability only
         glm::vec3* position;

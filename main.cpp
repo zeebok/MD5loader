@@ -21,12 +21,13 @@ int main(int argc, char** argv)
     glClearColor(0.0, 0.0, 0.0, 1.0);
 
     MD5* model = new MD5();
-    if(!GLEW_ARB_uniform_buffer_object)
-        model->loadShader("vertshader.glsl", "fragshader.glsl");
-    else
-        model->loadShader("vertshader3.glsl", "fragshader3.glsl");
+//    if(!GLEW_ARB_uniform_buffer_object)
+//        model->loadShader("vertshader.glsl", "fragshader.glsl");
+//    else
+//        model->loadShader("vertshader3.glsl", "fragshader3.glsl");
 
-    model->load("boblampclean.md5mesh");
+    if(!model->load("boblampclean.md5mesh", "vertshader3.glsl", "fragshader3.glsl"))
+        return -1;
 
     bool running = true;
     SDL_Event event;
@@ -53,6 +54,9 @@ int main(int argc, char** argv)
     }
 
     delete model;
+
+    SDL_DestroyWindow(mainWin);
+    SDL_GL_DeleteContext(context);
 
     SDL_Quit();
 

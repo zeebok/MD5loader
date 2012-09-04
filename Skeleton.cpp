@@ -23,12 +23,41 @@ bool Skeleton::addBone(Bone b)
     return true;
 }
 
-void Skeleton::prepUniforms(void)
+void Skeleton::prepUniforms(GLuint program)
 {
     if(GLEW_ARB_uniform_buffer_object)
     {
-        // TODO: Finish binding UBO
+        block = glGetUniformBlockIndex(program, "JointBlock");
         glGenBuffers(GL_UNIFORM_BUFFER, &ubo);
+
+        GLfloat buffer[numBones*7];
+        int index = 0;
+
+        // Fill buffer with all positions first
+        for(int i = 0; i < numBones; ++i)
+        {
+            buffer[index]   = skeleton[i].position.x;
+            buffer[index+1] = skeleton[i].position.y;
+            buffer[index+2] = skeleton[i].position.z;
+            index += 3;
+        }
+
+        // Fill remainder of buffer with orientations
+        for(int i = 0; i < numBones; ++i)
+        {
+            buffer[index]   = skeleton[i].orientation.x;
+            buffer[index+1] = skeleton[i].orientation.y;
+            buffer[index+2] = skeleton[i].orientation.z;
+            buffer[index+3] = skeleton[i].orientation.w;
+            index += 4;
+        }
+
+        glBindBuffer(GL_UNIFORM_BUFFER, ubo);
+        glBufferData(GL_UNIFORM_BUFFER, sizeof(GLfloat)*7*numBones, buffer, GL_STREAM_DRAW);
+        glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+        glUniformBlockBinding(program, block, globalBind);
+        glBindBufferRange(GL_UNIFORM_BUFFER, globalBind, ubo, 0, sizeof(GLfloat)*7*numBones);
     }
     else
     {

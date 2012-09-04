@@ -1,4 +1,4 @@
-#version 330
+﻿#version 330
 
 layout(location = 0) in vec2 uv;
 layout(location = 1) in vec4 wBias;
@@ -23,7 +23,7 @@ vec3 calcOrt(vec4  j, vec3 w)
 
 void main(void)
 {
-    vec3 finalPos = vec(0, 0, 0);
+    vec3 finalPos = vec3(0, 0, 0);
 
     for(int i = 0; i < 4; ++i)
     {

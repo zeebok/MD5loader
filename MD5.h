@@ -39,8 +39,8 @@ class MD5
         MD5(void);
         ~MD5(void);
 
-        bool load(const char* filename);
         bool load(const char* filename, const char* vshader, const char* fshader);
+        bool load(const char* filename);
         bool loadShader(const char* vshader, const char* fshader);
         void save(const char* filename);
 
